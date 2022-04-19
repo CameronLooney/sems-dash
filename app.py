@@ -49,7 +49,7 @@ with st.sidebar.form(key='my_form_to_submit'):
             return options_fq
 
         options_fq = side_fq_options()
-        print(options_fq)
+
         def week_choice(fq):
             options = []
             weeks = ["W01", 'W02', 'W03', 'W04', 'W05', 'W06', 'W07', "W08", 'W09', 'W10', 'W11', 'W12', 'W13']
@@ -85,7 +85,7 @@ if st.sidebar.button("Generate Dashboard"):
                                df['FW']))
         return df
     graph_data = add_quarters_column(graph_data)
-    print("UNIQUE" + str(graph_data["Quarter"].unique()))
+
 
     #quarter_list= sems_df['FW'].str.split('W', 1, expand=True).unqiue()
 
@@ -747,39 +747,85 @@ if st.sidebar.button("Generate Dashboard"):
 
     # top 10 partners
 
-    first_chart, second_chart= st.columns([5,1])
-    with first_chart:
-        st.markdown("#### Top 10 Partners")
-        x = graph_data.groupby('Sold-To ID').size()
-        df = pd.DataFrame(x, columns=['Count'])
-        df["Sold-To ID"] = df.index
-        df = df.sort_values('Count',ascending=[False])
-        df = df.head(n=10)
+    st.markdown("----", unsafe_allow_html=True)
+    st.markdown("## Top Partner Analysis")
+    x = graph_data.groupby('Sold-To ID').size()
+    df_partner = pd.DataFrame(x, columns=['Count'])
+    df_partner["Sold-To ID"] = df_partner.index
+    df_partner = df_partner.sort_values('Count',ascending=[False])
+    df_partner = df_partner.head(n=10)
 
-        #dfg = df.groupby(['name']).size().to_frame().sort_values([0], ascending=False).head(10).reset_index()
 
-        fig = px.histogram(data_frame=df, x='Sold-To ID',y="Count",color_discrete_sequence=['gold'],text_auto=True)
+    fig = px.histogram(data_frame=df_partner,title = "SEMS per Top 10 Partners",x='Sold-To ID',y="Count",color_discrete_sequence=['gold'],text_auto=True)
 
-        st.plotly_chart(fig, use_container_width=True)
-    with second_chart:
+    st.plotly_chart(fig, use_container_width=True)
+
+    open_df = open_status_df(graph_data)
+    x = open_df.groupby('Sold-To ID').size()
+    df = pd.DataFrame(x, columns=['Count'])
+    df["Sold-To ID"] = df.index
+    df = df.sort_values('Count', ascending=[False])
+    df = df.head(n=10)
+    fig = px.histogram(data_frame=df, title="Open SEMS by Partner", x='Sold-To ID', y="Count", color_discrete_sequence=['gold'],
+                       text_auto=True)
+
+    st.plotly_chart(fig, use_container_width=True)
+
+    top_10_partners = list(df["Sold-To ID"])
+    x = graph_data.groupby(['Sold-To ID', 'Priority']).size()
+    new_df = x.to_frame(name='Count').reset_index()
+    new_df = new_df.sort_values('Count', ascending=[False])
+    new_df = new_df[new_df["Sold-To ID"].isin(top_10_partners)]
+    fig = px.histogram(data_frame=new_df, x='Sold-To ID', y="Count", title='P1 vs P2 by Partner',
+                       color="Priority", text_auto=True,
+                       color_discrete_map={'P1': 'gold',
+                                           'P2': '#00d1ff',
+                                           }
+                       )
+    fig.update_layout(barmode='group')
+
+    st.plotly_chart(fig, use_container_width=True)
+
+    top_10_partners = list(df["Sold-To ID"])
+    open = open_status_df(graph_data)
+    x = open.groupby(['Sold-To ID', 'Priority']).size()
+    new_df = x.to_frame(name='Count').reset_index()
+    new_df = new_df.sort_values('Count', ascending=[False])
+    new_df = new_df[new_df["Sold-To ID"].isin(top_10_partners)]
+    fig = px.histogram(data_frame=new_df, x='Sold-To ID', y="Count", title='P1 vs P2 Open SEMS by Partner',
+                       color="Priority", text_auto=True,
+                       color_discrete_map={'P1': 'gold',
+                                           'P2': '#00d1ff',
+                                           }
+                       )
+    fig.update_layout(barmode='group')
+
+    st.plotly_chart(fig, use_container_width=True)
+
+    st.markdown("### Top 10 Partners Summary")
+    first_partner, second_partner,third_partner ,fourth_partner,fifth_partner = st.columns(5)
+
+    with first_partner:
         st.markdown("**Number of SEMS**")
-        num_sems = df['Count'].sum()
+        num_sems = df_partner['Count'].sum()
         st.markdown(f"<h1 style='text-align: left; color: gold;'>{num_sems}</h1>", unsafe_allow_html=True)
-    with second_chart:
+    with second_partner:
+        st.markdown("**Number of Open SEMS**")
+        num_sems_open = new_df['Count'].sum()
+        st.markdown(f"<h1 style='text-align: left; color: gold;'>{num_sems_open}</h1>", unsafe_allow_html=True)
+
+    with third_partner:
         st.markdown("**Percent of Total**")
         sem_percent = percentage(num_sems,row_count(graph_data))
         st.markdown(f"<h1 style='text-align: left; color: gold;'>{sem_percent}</h1>", unsafe_allow_html=True)
-    with second_chart:
+    with fourth_partner:
         st.markdown("**Percent Open**")
-        golduced_to_open = open_status_df(graph_data)
-
-        x = golduced_to_open.groupby('Sold-To ID').size()
-        df = pd.DataFrame(x, columns=['Count'])
-        df["Sold-To ID"] = df.index
-        df = df.sort_values('Count', ascending=[False])
-        df = df.head(n=10)
-        num_open_sems = df['Count'].sum()
+        num_open_sems = new_df['Count'].sum()
         sems_percent_open = percentage(num_open_sems,num_sems)
         st.markdown(f"<h1 style='text-align: left; color: gold;'>{sems_percent_open}</h1>", unsafe_allow_html=True)
+    with fifth_partner:
+        st.markdown("**Largest Partner**")
+        largest = df_partner["Sold-To ID"].iloc[0]
+        st.markdown(f"<h1 style='text-align: left; color: gold;font-size: 20px;'>{largest}</h1>", unsafe_allow_html=True)
 
-
+    st.markdown("<hr/>", unsafe_allow_html=True)
