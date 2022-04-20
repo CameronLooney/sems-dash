@@ -46,11 +46,13 @@ def check_password():
 if check_password():
 
     sems = st.sidebar.file_uploader("Upload SEMS data", type="xlsx")
-    def read_excel(df):
-        sems_df = pd.read_excel(df, sheet_name=0, engine="openpyxl")
-        return sems_df
-    sems_df = read_excel(sems)
-    if sems_df is not None:
+    if sems is not None:
+
+        def read_excel(df):
+            sems_df = pd.read_excel(df, sheet_name=0, engine="openpyxl")
+            return sems_df
+        sems_df = read_excel(sems)
+
         with st.sidebar.form(key='my_form_to_submit'):
             with st.sidebar:
                 @st.cache
