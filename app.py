@@ -44,21 +44,13 @@ def check_password():
         return True
 
 if check_password():
-    @st.cache()
-    def file_info(directory):
-        file_list = []
-        for i in os.listdir(directory):
-            a = os.stat(os.path.join(directory, i))
-            file_list.append([i, time.ctime(a.st_atime), time.ctime(a.st_ctime)])  # [file,most_recent_access,created]
-        return file_list
 
-    @st.cache()
-    def read_from_box():
-        file_list = file_info(path)
-        file_path = path + file_list[-1][0]
-        sems_df = pd.read_excel(file_path, sheet_name=0, engine="openpyxl")
+    sems = st.sidebar.file_uploader("Upload SEMS data", type="xlsx")
+    def read_excel(df):
+        sems_df = pd.read_excel(df, sheet_name=0, engine="openpyxl")
         return sems_df
-    sems_df = read_from_box()
+    sems_df = read_excel(sems)
+
     with st.sidebar.form(key='my_form_to_submit'):
         with st.sidebar:
             @st.cache
