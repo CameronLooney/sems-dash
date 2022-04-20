@@ -11,7 +11,8 @@ st.set_page_config(page_title = 'SEMs Dashboard',layout='wide',page_icon=':bar_c
 
 ### top row
 st.sidebar.markdown("## Dashboard Parameters")
-path = os.path.join(os.path.expanduser("~"), "Library/CloudStorage/Box-Box/My Box Notes/")
+path = os.path.join(os.path.expanduser("~"), "Library/CloudStorage/Box-Box/SEMS data for Dashboard/")
+
 
 
 def check_password():
@@ -60,6 +61,7 @@ if check_password():
     sems_df = read_from_box()
     with st.sidebar.form(key='my_form_to_submit'):
         with st.sidebar:
+            @st.cache
             def sort_quarters(df):
                 year_quarter_list = df["FW"].unique()
                 year_quarter_list = [i.split('W', 1)[0] for i in year_quarter_list]
@@ -448,7 +450,7 @@ if check_password():
                                text_auto=True)
 
             st.plotly_chart(fig, use_container_width=True)
-
+        hist_top10_open_team()
         def hist_top10_open_issue():
             df_open = open_status_df(graph_data)
             x = df_open.groupby('SEM Issue Type').size()
@@ -461,6 +463,7 @@ if check_password():
                                text_auto=True)
 
             st.plotly_chart(fig, use_container_width=True)
+        hist_top10_open_issue()
         if len(options_week)>4:
 
             def open_order_trend():
@@ -761,16 +764,6 @@ if check_password():
 
 
 
-        if len(options_week)>4:
-                x = graph_data.groupby('FW').size()
-                df = pd.DataFrame(x, columns=['Count'])
-                df["FW"]  = df.index
-                fig = px.scatter(data_frame=df, x="FW", y="Count",color_discrete_sequence = ['gold'])
-                fig.update_layout(xaxis=dict(showgrid=False),
-                                  yaxis=dict(showgrid=False)
-                                  )
-                fig.update_traces(mode='lines')
-                st.plotly_chart(fig, use_container_width=True)
 
 
 
@@ -838,21 +831,21 @@ if check_password():
         with first_partner:
             st.markdown("**Number of SEMS**")
             num_sems = df_partner['Count'].sum()
-            st.markdown(f"<h1 style='text-align: left; color: gold;'>{num_sems}</h1>", unsafe_allow_html=True)
+            st.markdown(f"<h1 style='text-align: left; color: gold;font-size: 30px;'>{num_sems}</h1>", unsafe_allow_html=True)
         with second_partner:
             st.markdown("**Number of Open SEMS**")
             num_sems_open = new_df['Count'].sum()
-            st.markdown(f"<h1 style='text-align: left; color: gold;'>{num_sems_open}</h1>", unsafe_allow_html=True)
+            st.markdown(f"<h1 style='text-align: left; color: gold;font-size: 30px;'>{num_sems_open}</h1>", unsafe_allow_html=True)
 
         with third_partner:
             st.markdown("**Percent of Total**")
             sem_percent = percentage(num_sems,row_count(graph_data))
-            st.markdown(f"<h1 style='text-align: left; color: gold;'>{sem_percent}</h1>", unsafe_allow_html=True)
+            st.markdown(f"<h1 style='text-align: left; color: gold;font-size: 30px;'>{sem_percent}</h1>", unsafe_allow_html=True)
         with fourth_partner:
             st.markdown("**Percent Open**")
             num_open_sems = new_df['Count'].sum()
             sems_percent_open = percentage(num_open_sems,num_sems)
-            st.markdown(f"<h1 style='text-align: left; color: gold;'>{sems_percent_open}</h1>", unsafe_allow_html=True)
+            st.markdown(f"<h1 style='text-align: left; color: gold;font-size: 30px;'>{sems_percent_open}</h1>", unsafe_allow_html=True)
         with fifth_partner:
             st.markdown("**Largest Partner**")
             largest = df_partner["Sold-To ID"].iloc[0]
@@ -943,3 +936,41 @@ if check_password():
             percent_open_region = percentage(count_total_open,count_total)
             st.markdown(f"<h1 style='text-align: left; color: gold; font-size: 30px;'>{percent_open_region}</h1>",
                         unsafe_allow_html=True)
+
+
+        # Additional Analysis
+        st.markdown("## Additional Analysis")
+        if len(options_week)>4:
+                x = graph_data.groupby('FW').size()
+                df = pd.DataFrame(x, columns=['Count'])
+                df["FW"]  = df.index
+                fig = px.scatter(data_frame=df, x="FW", y="Count",title = "Overall Trend of SEMS",color_discrete_sequence = ['gold'])
+                fig.update_layout(xaxis=dict(showgrid=False),
+                                  yaxis=dict(showgrid=False)
+                                  )
+                fig.update_traces(mode='lines')
+                st.plotly_chart(fig, use_container_width=True)
+        x = graph_data.groupby('SEM Issue Type').size()
+        df = pd.DataFrame(x, columns=['Count'])
+        df["SEM Issue Type"] = df.index
+        df = df.sort_values('Count', ascending=[False])
+        df = df.head(n=10)
+        fig = px.histogram(data_frame=df, x="SEM Issue Type", y="Count", title="Top 10 Most Common Issues", text_auto=True,
+                           color_discrete_sequence=['gold'])
+        fig.update_layout(xaxis=dict(showgrid=False),
+                          yaxis=dict(showgrid=False)
+                          )
+
+        st.plotly_chart(fig, use_container_width=True)
+        x = graph_data.groupby('Root Cause').size()
+        df = pd.DataFrame(x, columns=['Count'])
+        df["Root Cause"] = df.index
+        df = df.sort_values('Count', ascending=[False])
+        df = df.head(n=10)
+        fig = px.histogram(data_frame=df, x="Root Cause", y="Count", title="Top 10 Root Cause",text_auto=True,
+                         color_discrete_sequence=['gold'])
+        fig.update_layout(xaxis=dict(showgrid=False),
+                          yaxis=dict(showgrid=False)
+                          )
+
+        st.plotly_chart(fig, use_container_width=True)
