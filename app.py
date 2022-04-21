@@ -827,7 +827,7 @@ if check_password():
                 num_sems = df_partner['Count'].sum()
                 st.markdown(f"<h1 style='text-align: left; color: gold;font-size: 30px;'>{num_sems}</h1>", unsafe_allow_html=True)
             with second_partner:
-                st.markdown("**Number of Open SEMS**")
+                st.markdown("**No Open SEMS**")
                 num_sems_open = new_df['Count'].sum()
                 st.markdown(f"<h1 style='text-align: left; color: gold;font-size: 30px;'>{num_sems_open}</h1>", unsafe_allow_html=True)
 
