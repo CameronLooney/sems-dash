@@ -710,54 +710,54 @@ if check_password():
                 st.plotly_chart(fig, use_container_width=True)
 
                 st.markdown("### CAT Summary")
-                first_cat, second_cat, third_cat, fourth_cat, fifth_cat = st.columns(5)
-                open_dataframe = open_status_df(graph_data)
-                with first_cat:
-                    st.markdown("**Largest CAT**")
-                    largest = graph_data
-                    x = largest.groupby('CAT').size()
-                    df = pd.DataFrame(x, columns=['Count'])
-                    df["CAT"] = df.index
-                    df = df.sort_values('Count')
-                    print(df['Count'].values[-1])
-                    team_name = (df['CAT'].values[-1])
-                    st.markdown(f"<h1 style='text-align: left; color: gold; font-size: 30px;'>{team_name}</h1>",
-                                unsafe_allow_html=True)
+            first_cat, second_cat, third_cat, fourth_cat, fifth_cat = st.columns(5)
+            open_dataframe = open_status_df(graph_data)
+            with first_cat:
+                st.markdown("**Largest CAT**")
+                largest = graph_data
+                x = largest.groupby('CAT').size()
+                df = pd.DataFrame(x, columns=['Count'])
+                df["CAT"] = df.index
+                df = df.sort_values('Count')
+                print(df['Count'].values[-1])
+                team_name = (df['CAT'].values[-1])
+                st.markdown(f"<h1 style='text-align: left; color: gold; font-size: 30px;'>{team_name}</h1>",
+                            unsafe_allow_html=True)
 
 
-                with second_cat:
-                    st.markdown("**% of Total**")
-                    largest_sum = df['Count'].values[-1]
-                    total = df["Count"].sum()
-                    percent = percentage(largest_sum,total)
+            with second_cat:
+                st.markdown("**% of Total**")
+                largest_sum = df['Count'].values[-1]
+                total = df["Count"].sum()
+                percent = percentage(largest_sum,total)
 
 
-                    st.markdown(f"<h1 style='text-align: left; color: gold; font-size: 30px;'>{percent}</h1>",
-                                unsafe_allow_html=True)
+                st.markdown(f"<h1 style='text-align: left; color: gold; font-size: 30px;'>{percent}</h1>",
+                            unsafe_allow_html=True)
 
-                with third_cat:
-                    st.markdown("**Total No. SEMS**")
-                    st.markdown(f"<h1 style='text-align: left; color: gold; font-size: 30px;'>{df['Count'].values[-1]}</h1>",
-                                unsafe_allow_html=True)
+            with third_cat:
+                st.markdown("**Total No. SEMS**")
+                st.markdown(f"<h1 style='text-align: left; color: gold; font-size: 30px;'>{df['Count'].values[-1]}</h1>",
+                            unsafe_allow_html=True)
 
-                with fourth_cat:
-                    st.markdown("**No. Open SEMS**")
-                    open_df = open_status_df(graph_data)
-                    x = open_df.groupby('CAT').size()
-                    df = pd.DataFrame(x, columns=['Count'])
-                    df["CAT"] = df.index
-                    df = df.sort_values('Count')
+            with fourth_cat:
+                st.markdown("**No. Open SEMS**")
+                open_df = open_status_df(graph_data)
+                x = open_df.groupby('CAT').size()
+                df = pd.DataFrame(x, columns=['Count'])
+                df["CAT"] = df.index
+                df = df.sort_values('Count')
 
 
-                    st.markdown(f"<h1 style='text-align: left; color: gold; font-size: 30px;'>{df['Count'].values[-1]}</h1>",
-                                unsafe_allow_html=True)
-                with fifth_cat:
-                    st.markdown("**No. of Open P1**")
-                    open_p1 = open_df[open_df["CAT"] == team_name]
-                    num_p1 = open_p1['Priority'].str.contains(r"P1").sum()
-                    st.markdown(f"<h1 style='text-align: left; color: gold;font-size: 30px;'>{num_p1}</h1>",
-                                unsafe_allow_html=True)
-                st.markdown("<hr/>", unsafe_allow_html=True)
+                st.markdown(f"<h1 style='text-align: left; color: gold; font-size: 30px;'>{df['Count'].values[-1]}</h1>",
+                            unsafe_allow_html=True)
+            with fifth_cat:
+                st.markdown("**No. of Open P1**")
+                open_p1 = open_df[open_df["CAT"] == team_name]
+                num_p1 = open_p1['Priority'].str.contains(r"P1").sum()
+                st.markdown(f"<h1 style='text-align: left; color: gold;font-size: 30px;'>{num_p1}</h1>",
+                            unsafe_allow_html=True)
+            st.markdown("<hr/>", unsafe_allow_html=True)
 
 
 
@@ -769,7 +769,7 @@ if check_password():
 
             # top 10 partners
 
-            st.markdown("----", unsafe_allow_html=True)
+
             st.markdown("## Top Partner Analysis")
             x = graph_data.groupby('Sold-To ID').size()
             df_partner = pd.DataFrame(x, columns=['Count'])
