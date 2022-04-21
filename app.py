@@ -54,6 +54,7 @@ if check_password():
         sems_df = read_excel(sems)
 
         with st.sidebar.form(key='my_form_to_submit'):
+
             with st.sidebar:
                 @st.cache
                 def sort_quarters(df):
@@ -104,7 +105,8 @@ if check_password():
                 df = df[df["FW"].isin(dates)]
                 return df
             graph_data = drop_unneeded_date_row(sems_df,options_week)
-
+            if len(graph_data["FW"].unique())==0:
+                st.error("ERROR: No SEMS Data to Analyse")
             def add_quarters_column(df):
                 df['Quarter'] = (np.where(df['FW'].str.contains('W'),
                                        df['FW'].str.split('W').str[0],
@@ -218,7 +220,7 @@ if check_password():
             st.markdown("<hr/>", unsafe_allow_html=True)
 
            # --------------------------------- WEEK ON WEEK MARKERS -----------------------------------
-            st.markdown("## Week on Week Markers")
+
 
 
             def value_counts_df(df, col):
@@ -248,7 +250,11 @@ if check_password():
                 df_compare = df[df[col] == values[1]]
                 return df_compare
 
-            if len(options_week) > 2:
+
+
+            if len(graph_data["FW"].unique())>=2:
+                st.markdown("## Week on Week Markers")
+
 
                 weeks_to_compare = df_with_two(graph_data,"FW")
                 df_weeks = value_counts_df(weeks_to_compare,'FW')
@@ -458,7 +464,7 @@ if check_password():
 
                 st.plotly_chart(fig, use_container_width=True)
             hist_top10_open_issue()
-            if len(options_week)>4:
+            if len(graph_data["FW"].unique())>=3:
 
                 def open_order_trend():
                     x = graph_data.groupby(["FW"]).size().reset_index(name="Count")
@@ -471,8 +477,7 @@ if check_password():
                     st.plotly_chart(fig, use_container_width=True)
                 open_order_trend()
 
-
-            if len(options_week)> 2:
+            if len(graph_data["FW"].unique()) >= 2:
                 status = ["Open", "Closed"]
                 df = graph_data[graph_data["SEM Status"].isin(status)]
                 from natsort import natsort_keygen
@@ -678,7 +683,7 @@ if check_password():
                 st.plotly_chart(fig, use_container_width=True)
 
 
-            if len(options_week) > 4:
+            if len(graph_data["FW"].unique())>2:
                 x = graph_data.groupby(["FW", "CAT"]).size().reset_index(name="Count")
                 fig = px.scatter(data_frame=x, x="FW", y="Count", color='CAT',title = 'Total No. SEM Trend',color_discrete_map={'RO': 'gold',
                                                       'AOU': '#c552e4',
@@ -931,10 +936,10 @@ if check_password():
                 st.markdown(f"<h1 style='text-align: left; color: gold; font-size: 30px;'>{percent_open_region}</h1>",
                             unsafe_allow_html=True)
 
-
+            st.markdown("<hr/>", unsafe_allow_html=True)
             # Additional Analysis
             st.markdown("## Additional Analysis")
-            if len(options_week)>4:
+            if len(graph_data["FW"].unique())>2:
                     x = graph_data.groupby('FW').size()
                     df = pd.DataFrame(x, columns=['Count'])
                     df["FW"]  = df.index
