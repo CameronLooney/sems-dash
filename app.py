@@ -3,6 +3,7 @@ import pandas as pd
 import numpy as np
 import itertools
 import plotly.express as px
+
 from natsort import natsort_keygen
 import os
 import time
@@ -64,6 +65,27 @@ if check_password():
         with st.sidebar.form(key='my_form_to_submit'):
 
             with st.sidebar:
+                from datetime import date,timedelta
+                def start_data_date():
+                    start_date = st.date_input('Start Date', value=(date.today() - timedelta(30)))
+                    start_date = str(start_date)
+                    return start_date
+                start_date = start_data_date()
+                def end_data_date():
+                    end = st.date_input('End Date', value=date.today())
+                    end_date = str(end)
+                    return end_date
+                end_date = end_data_date()
+
+
+
+
+
+
+                sems_df["Created On"] = sems_df["Created On"].astype(str)
+                sems_df = sems_df[(sems_df["Created On"] >= start_date) & (sems_df["Created On"] <=end_date)]
+                print("DATE RANGE ")
+                print(len(sems_df.index))
                 def dashboard_section_selector():
                     dashb_part = st.multiselect(
                         "Pick which Dashboards to See",
@@ -83,32 +105,9 @@ if check_password():
                     fq_params = sorted(quarter_list,reverse=True)
                     return fq_params
                 fq_params = sort_quarters(sems_df)
-                def side_fq_options():
-                    options_fq = st.multiselect(
-                        'Pick Quarters to Visualise',
-                        fq_params,
-                        [str(fq_params[0])])
-                    return options_fq
-
-                options_fq = side_fq_options()
-
-                @st.experimental_memo
-                def week_choice(fq):
-                    options = []
-                    weeks = ["W01", 'W02', 'W03', 'W04', 'W05', 'W06', 'W07', "W08", 'W09', 'W10', 'W11', 'W12', 'W13']
-                    for e1, e2 in itertools.product(fq, weeks):
-                        options.append(str(e1) + str(e2))
-                    return options
-
-                def side_week_options():
-
-                    options_week  = st.multiselect(
-                        "Please pick weeks to visualise",
-                        week_choice(options_fq)
-                        ,
-                        week_choice(options_fq))
-                    return options_week
-                options_week = side_week_options()
+                def number_of_weeks(df):
+                    return len(list(df['FW'].unique()))
+                number_of_weeks_in_data = number_of_weeks(sems_df)
                 submit_button = st.form_submit_button(label='Update Dashboard Parameters')
 
 
@@ -117,10 +116,11 @@ if check_password():
             # zip two lists and drop all rows not in and boom we are done
 
             @st.experimental_memo
-            def drop_unneeded_date_row(df,dates):
-                df = df[df["FW"].isin(dates)]
-                return df
-            graph_data = drop_unneeded_date_row(sems_df,options_week)
+            def drop_unneeded_date_row(df,start,end):
+                sems_df = df[(df["Created On"] >= start) & (df["Created On"] <= end)]
+                return sems_df
+
+            graph_data = drop_unneeded_date_row(sems_df,start_date,end_date)
             if len(graph_data["FW"].unique())==0:
                 st.error("ERROR: No SEMS Data to Analyse")
 
@@ -362,7 +362,7 @@ if check_password():
 
 
 
-                if len(options_fq) >= 2:
+                if len(fq_params) >= 2:
                     st.markdown("## Quarter on Quarter Markers")
                     first_quarterly_marker, second_quarterly_marker, third_quarterly_marker = st.columns(3)
 
