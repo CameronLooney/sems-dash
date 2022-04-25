@@ -47,7 +47,7 @@ if check_password():
 
     sems = st.sidebar.file_uploader("Upload SEMS data", type="xlsx")
     if sems is not None:
-
+        @st.experimental_memo
         def read_excel(df):
             sems_df = pd.read_excel(df, sheet_name=0, engine="openpyxl")
             return sems_df
@@ -56,7 +56,7 @@ if check_password():
         with st.sidebar.form(key='my_form_to_submit'):
 
             with st.sidebar:
-                @st.cache
+                @st.experimental_memo
                 def sort_quarters(df):
                     year_quarter_list = df["FW"].unique()
                     year_quarter_list = [i.split('W', 1)[0] for i in year_quarter_list]
@@ -77,6 +77,8 @@ if check_password():
 
                 options_fq = side_fq_options()
 
+
+                @st.experimental_memo
                 def week_choice(fq):
                     options = []
                     weeks = ["W01", 'W02', 'W03', 'W04', 'W05', 'W06', 'W07', "W08", 'W09', 'W10', 'W11', 'W12', 'W13']
@@ -100,13 +102,16 @@ if check_password():
         if st.sidebar.button("Generate Dashboard"):
             # zip two lists and drop all rows not in and boom we are done
 
-
+            @st.experimental_memo
             def drop_unneeded_date_row(df,dates):
                 df = df[df["FW"].isin(dates)]
                 return df
             graph_data = drop_unneeded_date_row(sems_df,options_week)
             if len(graph_data["FW"].unique())==0:
                 st.error("ERROR: No SEMS Data to Analyse")
+
+
+            @st.experimental_memo
             def add_quarters_column(df):
                 df['Quarter'] = (np.where(df['FW'].str.contains('W'),
                                        df['FW'].str.split('W').str[0],
@@ -123,6 +128,9 @@ if check_password():
             st.markdown("## Main KPIs")
 
             first_kpi, second_kpi, third_kpi = st.columns(3)
+
+
+            @st.experimental_memo
             def open_status_df(df):
                 status = ["Open"]
                 df = df[df["SEM Status"].isin(status)]
