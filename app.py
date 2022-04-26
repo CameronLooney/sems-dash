@@ -70,6 +70,7 @@ if check_password():
             df = df[df["Sales Region"].isin(regions_to_keep)]
             df = df[~df["Created by Team Name"].str.contains("RMA")]
             df = df[~df["Created by Team Name"].str.contains("CSS CRU")]
+            df = df[~df["Carrier"].str.contains("RMA",na=False)]
             df = df[~df["CAT"].str.contains("AOU")]
 
             return df
@@ -1037,25 +1038,26 @@ if check_password():
                 st.markdown("<hr/>", unsafe_allow_html=True)
             if "Carrier" in dashboard_selection:
                 st.markdown("## Carrier Analysis")
+                st.write(sems_df)
 
                 # Carriers by Total Sems
-                x = graph_data.groupby('Created by Team Name').size()
+                x = graph_data.groupby('Carrier').size()
                 df_total = pd.DataFrame(x, columns=['Count'])
-                df_total["Created by Team Name"] = df_total.index
+                df_total["Carrier"] = df_total.index
                 df_total = df_total.sort_values('Count', ascending=[False])
                 df_total = df_total.head(n=10)
-                fig = px.histogram(data_frame=df_total, x='Created by Team Name', y="Count", title = "Top 10 Carriers by SEMS created",color_discrete_sequence=['gold'],
+                fig = px.histogram(data_frame=df_total, x='Carrier', y="Count", title = "Top 10 Carriers by SEMS created",color_discrete_sequence=['gold'],
                                    text_auto=True)
                 st.plotly_chart(fig, use_container_width=True)
 
                 # Carrier by Open SEMS
                 df_open = open_status_df(graph_data)
-                x = df_open.groupby('Created by Team Name').size()
+                x = df_open.groupby('Carrier').size()
                 df_open = pd.DataFrame(x, columns=['Count'])
-                df_open["Created by Team Name"] = df_open.index
+                df_open['Carrier'] = df_open.index
                 df_open = df_open.sort_values('Count', ascending=[False])
                 df_open = df_open.head(n=10)
-                fig = px.histogram(data_frame=df_open, x='Created by Team Name', y="Count",
+                fig = px.histogram(data_frame=df_open, x='Carrier', y="Count",
                                    title="Top 10 Carriers by Open SEMS", color_discrete_sequence=['gold'],
                                    text_auto=True)
                 st.plotly_chart(fig, use_container_width=True)
