@@ -2,9 +2,12 @@ import streamlit as st
 import pandas as pd
 import numpy as np
 import itertools
+
+
 import plotly.express as px
 
 from natsort import natsort_keygen
+from datetime import date,timedelta
 import os
 import time
 
@@ -82,7 +85,6 @@ if check_password():
         with st.sidebar.form(key='my_form_to_submit'):
 
             with st.sidebar:
-                from datetime import date,timedelta
                 def start_data_date():
                     start_date = st.date_input('Start Date', value=(date.today() - timedelta(30)))
                     start_date = str(start_date)
@@ -101,15 +103,18 @@ if check_password():
 
                 sems_df["Created On"] = sems_df["Created On"].astype(str)
                 sems_df = sems_df[(sems_df["Created On"] >= start_date) & (sems_df["Created On"] <=end_date)]
-                print("DATE RANGE ")
-                print(len(sems_df.index))
+
                 def dashboard_section_selector():
                     dashb_part = st.multiselect(
                         "Pick which Dashboards to See",
-                        ["Main KPI's", 'Open SEMS', 'Carrier', 'Customer','Region', "Category", "Additional Analysis"],
+                        ["Main KPI's", 'Open SEMS', 'Carrier', 'Customer','Region', "Category", "Additional Analysis", "Action Day Follow Up"],
                         ["Main KPI's"])
                     return dashb_part
                 dashboard_selection = dashboard_section_selector()
+                def action_day_selector():
+                    days = st.slider("Select minimum number of Action Days for Excel File Generator", min_value = 0, max_value = 30, value = 10)
+                    return days
+                action_days = action_day_selector()
                 @st.experimental_memo
                 def sort_quarters(df):
                     year_quarter_list = df["FW"].unique()
@@ -1118,6 +1123,105 @@ if check_password():
                 carrier(2,"#FEC3A6")
                 carrier(3,"#EFE9AE")
                 carrier(4,"#CDEAC0")
+
+            # ----------------------- CUSTOMERS -------------------
+            st.markdown("<hr/>", unsafe_allow_html=True)
+            if "Customer" in dashboard_selection:
+                st.markdown("## Customer Analysis")
+
+                # graph of customer by sems
+                def customer_total_sems():
+                    x = graph_data.groupby('Sold-To ID').size()
+                    df_total = pd.DataFrame(x, columns=['Count'])
+                    df_total['Sold-To ID'] = df_total.index
+                    df_total = df_total.sort_values('Count', ascending=[False])
+                    df_total = df_total.head(n=15)
+                    fig = px.histogram(data_frame=df_total, x='Sold-To ID', y="Count",
+                                       title="Top 15 Customers by Total SEMS", color_discrete_sequence=['gold'],
+                                       text_auto=True)
+                    st.plotly_chart(fig, use_container_width=True)
+                customer_total_sems()
+
+                def customer_open_sems():
+                    x = open_status_df(graph_data)
+                    x = x.groupby('Sold-To ID').size()
+                    df_total = pd.DataFrame(x, columns=['Count'])
+                    df_total['Sold-To ID'] = df_total.index
+                    df_total = df_total.sort_values('Count', ascending=[False])
+                    df_total = df_total.head(n=10)
+                    fig = px.histogram(data_frame=df_total, x='Sold-To ID', y="Count",
+                                       title="Top 10 Customers by Open SEMS", color_discrete_sequence=['gold'],
+                                       text_auto=True)
+                    st.plotly_chart(fig, use_container_width=True)
+                customer_open_sems()
+
+                def df_customer_total():
+                    x = graph_data.groupby('Sold-To ID').size()
+                    df_total = pd.DataFrame(x, columns=['Count'])
+                    df_total['Sold-To ID'] = df_total.index
+                    df_total = df_total.sort_values('Count', ascending=[False])
+                    df_total = df_total.head(n=15)
+                    return df_total
+
+                # TOP CARRIER
+                def customer(number, colour):
+                    df_total = df_customer_total()
+                    st.markdown("### " + str(number + 1) + ". " + str(df_total['Sold-To ID'].iloc[number]))
+                    customer = str(df_total['Sold-To ID'].iloc[number])
+                    customer_df = graph_data[graph_data["Sold-To ID"].str.contains(customer, na=False)]
+
+                    def issue_graph():
+                        x = customer_df.groupby('SEM Sub issue Type').size()
+                        customer_issue_df = pd.DataFrame(x, columns=['Count'])
+                        customer_issue_df["SEM Sub issue Type"] = customer_issue_df.index
+                        customer_issue_df= customer_issue_df.sort_values('Count', ascending=[False])
+                        customer_issue_df = customer_issue_df.head(n=10)
+                        fig = px.histogram(data_frame=customer_issue_df, x='SEM Sub issue Type', y="Count",
+                                           title="SEM Sub-Issues for " + customer,
+                                           color_discrete_sequence=[colour],
+                                           text_auto=True)
+                        st.plotly_chart(fig, use_container_width=True)
+
+                    def customer_affected_graph():
+                        x = customer_df.groupby('Carrier').size()
+                        customer_carrier_affected_df = pd.DataFrame(x, columns=['Count'])
+                        customer_carrier_affected_df["Carrier"] = customer_carrier_affected_df.index
+                        customer_carrier_affected_df = customer_carrier_affected_df.sort_values('Count', ascending=[False])
+                        customer_carrier_affected_df = customer_carrier_affected_df.head(n=10)
+                        fig = px.histogram(data_frame=customer_carrier_affected_df, x='Carrier', y="Count",
+                                           title="Carriers affecting " + customer,
+                                           color_discrete_sequence=[colour],
+                                           text_auto=True)
+                        st.plotly_chart(fig, use_container_width=True)
+
+
+
+                    issue_graph()
+                    customer_affected_graph()
+                    st.markdown("<hr/>", unsafe_allow_html=True)
+
+
+
+                customer(0, "#FFAC81")
+                customer(1, "#FF928B")
+                customer(2, "#FEC3A6")
+                customer(3, "#EFE9AE")
+                customer(4, "#CDEAC0")
+
+            if "Action Day Follow Up" in dashboard_selection:
+
+                sems_df['Dates'] = pd.to_datetime(sems_df['Modified Date Time']).dt.date
+                date_to_compare = [d.date() for d in sems_df['Modified Date Time']]
+                sems_df["Business Days Since Action"] = np.busday_count(date_to_compare, date.today())
+
+                sems_df = sems_df[(sems_df["Business Days Since Action"] >=action_days) & (sems_df["SEM Status"]=="Open")]
+                st.write(sems_df["Business Days Since Action"])
+
+
+
+
+
+
 
 
 
