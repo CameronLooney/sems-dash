@@ -1126,8 +1126,9 @@ if check_password():
                 carrier(4,"#CDEAC0")
 
             # ----------------------- CUSTOMERS -------------------
-            st.markdown("<hr/>", unsafe_allow_html=True)
+
             if "Customer" in dashboard_selection:
+                st.markdown("<hr/>", unsafe_allow_html=True)
                 st.markdown("## Customer Analysis")
 
                 # graph of customer by sems
