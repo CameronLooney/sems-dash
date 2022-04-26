@@ -9,6 +9,7 @@ import plotly.express as px
 from natsort import natsort_keygen
 from datetime import date,timedelta
 import os
+import io
 import time
 
 st.set_page_config(page_title = 'SEMs Dashboard',layout='wide',page_icon=':bar_chart')
@@ -1215,8 +1216,49 @@ if check_password():
                 sems_df["Business Days Since Action"] = np.busday_count(date_to_compare, date.today())
 
                 sems_df = sems_df[(sems_df["Business Days Since Action"] >=action_days) & (sems_df["SEM Status"]=="Open")]
-                st.write(sems_df["Business Days Since Action"])
 
+
+
+                def write_to_excel(merged):
+                    merged["Created On"] = merged['Date']= pd.to_datetime(merged["Created On"])
+                    merged["Action Age [Days]"] = merged["Action Age [Days]"].round(0)
+                    # Writing df to Excel Sheet
+                    buffer = io.BytesIO()
+                    with pd.ExcelWriter(buffer, engine='xlsxwriter') as writer:
+                        # Write each dataframe to a different worksheet.
+                        # data["Date"] = pd.to_datetime(data["Date"])
+
+                        # pd.to_datetime('date')
+                        merged.to_excel(writer, sheet_name='Sheet1', index=False)
+                        workbook = writer.book
+                        worksheet = writer.sheets['Sheet1']
+
+                        # Light yellow fill with dark yellow text.
+
+                        for column in merged:
+                            column_width = max(merged[column].astype(str).map(len).max(), len(column))
+                            col_idx = merged.columns.get_loc(column)
+                            writer.sheets['Sheet1'].set_column(col_idx, col_idx, column_width)
+                            worksheet.autofilter(0, 0, merged.shape[0], merged.shape[1])
+                        header_format = workbook.add_format({'bold': True,
+                                                             'bottom': 2,
+                                                             'bg_color': '#0AB2F7'})
+
+                        # Write the column headers with the defined format.
+                        for col_num, value in enumerate(merged.columns.values):
+                            worksheet.write(0, col_num, value, header_format)
+
+                        writer.save()
+                        today = date.today()
+                        d1 = today.strftime("%d/%m/%Y")
+                        st.write("Download Completed File:")
+                        st.download_button(
+                            label="Download Excel worksheets",
+                            data=buffer,
+                            file_name="LTSI_file_" + d1 + ".xlsx",
+                            mime="application/vnd.ms-excel"
+                        )
+                write_to_excel(sems_df)
 
 
 
