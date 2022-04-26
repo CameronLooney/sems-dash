@@ -1038,7 +1038,7 @@ if check_password():
                 st.markdown("<hr/>", unsafe_allow_html=True)
             if "Carrier" in dashboard_selection:
                 st.markdown("## Carrier Analysis")
-                st.write(sems_df)
+
 
                 # Carriers by Total Sems
                 x = graph_data.groupby('Carrier').size()
@@ -1061,62 +1061,65 @@ if check_password():
                                    title="Top 10 Carriers by Open SEMS", color_discrete_sequence=['gold'],
                                    text_auto=True)
                 st.plotly_chart(fig, use_container_width=True)
-
-
-
-                # Open vs Closed
-                open_top_10  = df_open['Count'].sum()
-                total_top_10 = df_total['Count'].sum()
-                #priority_1_open = df_open['Priority'].str.contains(r"P1").sum()
-                #"Priority": ["Priority 1", "Priority 2"],"Priority Status": [priority_1_open,open_top_10-priority_1_open]
-                data = {'Category': ['Open', 'Closed'], 'Count': [open_top_10, total_top_10-open_top_10]}
-
-                # Create DataFrame
-                pie_df_carrier = pd.DataFrame(data)
-
-                # Print the output.
-                first_carrier,second_carrier = st.columns(2)
-                with first_carrier:
-
-                    fig = px.pie(pie_df_carrier, values='Count', names='Category', title='Pie Chart of SEM Status for Top 10 Carriers', hole=0.6,
-                                 color='Category', color_discrete_map={'Open': 'gold',
-                                                                  'Closed': '#c552e4',
-
-                                                                  })
+                def action_day_hist():
+                    x = graph_data.groupby('Carrier')["Action Age [Days]"].mean()
+                    df_open = pd.DataFrame(x, columns=["Action Age [Days]"])
+                    df_open["Action Age [Days]"] = df_open["Action Age [Days]"].round(2)
+                    df_open['Carrier'] = df_open.index
+                    df_open = df_open.sort_values("Action Age [Days]", ascending=[False])
+                    df_open = df_open.head(n=10)
+                    fig = px.histogram(data_frame=df_open, x='Carrier', y="Action Age [Days]",
+                                       title="Top 10 Carriers by Action Day Length", color_discrete_sequence=['gold'],
+                                       text_auto=True)
                     st.plotly_chart(fig, use_container_width=True)
-                #with second_carrier:
-                 #   fig = px.pie(pie_df_carrier, values="Priority Status", names="Priority",
-                  #               title='Top 10 Carrier Open SEM Priority Breakdown', hole=0.6,
-                   #              color="Priority", color_discrete_map={'Priority 1': 'gold',
-                     #                                                  'Priority 2': '#c552e4',
+                action_day_hist()
 
-                        #                                               })
-                    #st.plotly_chart(fig, use_container_width=True)
-                first_carrier_kpi, second_carrier_kpi, third_carrier_kpi = st.columns(3)
-                with first_carrier_kpi:
-                    st.markdown("**Carrier Most Open**")
 
-                    df = df_open.sort_values('Count')
-                    team_name = (df['Created by Team Name'].values[-1])
-                    st.markdown(f"<h1 style='text-align: left; color: gold; font-size: 20px;'>{team_name}</h1>",
-                                unsafe_allow_html=True)
-                with second_carrier_kpi:
-                    st.markdown("**% Top 10 Carrier Open**")
-                    percent_open = percentage(open_top_10, total_top_10)
-                    st.markdown(f"<h1 style='text-align: left; color: gold; font-size: 20px;'>{percent_open}</h1>",
-                                unsafe_allow_html=True)
-                #with third_carrier_kpi:
-                 #   st.markdown("**Most Common Issue**")
-                  #  open_df = open_status_df(graph_data)
-                   # top_10_carrier_list = list(df_open["Created by Team Name"])
-                   # print(top_10_carrier_list)
-                    #open_df = open_df["Created by Team Name"].isin(top_10_carrier_list)
-                    #print(open_df)
-                    #x = open_df.groupby('SEM Issue Type').size()
-                    #df = pd.DataFrame(x, columns=['Count'])
-                    #df["Issue"] = df.index
-                    #df = df.sort_values('Count')
-                    #issue_name = (df['Issue'].values[-1])
-                    #st.markdown(f"<h1 style='text-align: left; color: gold; font-size: 20px;'>{issue_name}</h1>",
-                     #           unsafe_allow_html=True)
+                #-------------------------- Carrier DEEP DIVE ----------------------------
+                st.markdown("<hr/>", unsafe_allow_html=True)
+                st.markdown("## Top 5 Carrier Deep Dive")
+
+
+
+
+
+                # TOP CARRIER
+                def carrier(number,colour):
+                    st.markdown("### " +str(number+1) + ". " + str(df_total['Carrier'].iloc[number]))
+                    carrier = str(df_total['Carrier'].iloc[number])
+                    carrier_df = graph_data[graph_data["Carrier"].str.contains(carrier, na=False)]
+
+                    def issue_graph():
+                        x = carrier_df.groupby('SEM Sub issue Type').size()
+                        carrier_issue_df = pd.DataFrame(x, columns=['Count'])
+                        carrier_issue_df["SEM Sub issue Type"] = carrier_issue_df.index
+                        carrier_issue_df = carrier_issue_df.sort_values('Count', ascending=[False])
+                        carrier_issue_df = carrier_issue_df.head(n=10)
+                        fig = px.histogram(data_frame=carrier_issue_df, x='SEM Sub issue Type', y="Count", title="Top 10 SEM Sub-Issues for " + carrier,
+                                           color_discrete_sequence=[colour],
+                                           text_auto=True)
+                        st.plotly_chart(fig, use_container_width=True)
+                    def customer_affected_graph():
+                        x = carrier_df.groupby('Sold-To ID').size()
+                        carrier_cust_affected_df = pd.DataFrame(x, columns=['Count'])
+                        carrier_cust_affected_df["Sold-To ID"] = carrier_cust_affected_df.index
+                        carrier_cust_affected_df= carrier_cust_affected_df.sort_values('Count', ascending=[False])
+                        carrier_cust_affected_df = carrier_cust_affected_df.head(n=10)
+                        fig = px.histogram(data_frame=carrier_cust_affected_df, x='Sold-To ID', y="Count",
+                                           title="Top 10 Customers affected by " + carrier,
+                                           color_discrete_sequence=[colour],
+                                           text_auto=True)
+                        st.plotly_chart(fig, use_container_width=True)
+                    issue_graph()
+                    customer_affected_graph()
+                    st.markdown("<hr/>", unsafe_allow_html=True)
+                carrier(0,"#FFAC81")
+                carrier(1,"#FF928B")
+                carrier(2,"#FEC3A6")
+                carrier(3,"#EFE9AE")
+                carrier(4,"#CDEAC0")
+
+
+
+
 
