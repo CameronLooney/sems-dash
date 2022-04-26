@@ -58,8 +58,22 @@ if check_password():
 
 
         @st.experimental_memo
-        def drop_rows(df):
+        def data_filter(df):
+            # 1. Drop unneeded columns
+            # 2. Drop non Western Europe
+            # 3. Drop RMA -> Failed Pickup etc
+            # 4. Drop AOU
+            # is Telco needed??
+            cols_to_drop = ['RMA  Nr','Assigned To User Name', 'Resolution', 'Wk 12/13', 'Sales District']
+            df.drop(cols_to_drop, inplace=True, axis=1)
+            regions_to_keep = ['South Europe',"DACH",'UK&I','North Europe']
+            df = df[df["Sales Region"].isin(regions_to_keep)]
+            df = df[~df["Created by Team Name"].str.contains("RMA")]
+            df = df[~df["Created by Team Name"].str.contains("CSS CRU")]
+            df = df[~df["CAT"].str.contains("AOU")]
+
             return df
+        sems_df = data_filter(sems_df)
 
 
         with st.sidebar.form(key='my_form_to_submit'):
@@ -153,6 +167,9 @@ if check_password():
 
 
             def percentage(part, whole):
+                if round(float(whole),0)==0:
+                    return str(round(100*float(part),2))
+
                 Percentage = round(100 * float(part) / float(whole), 2)
                 return str(Percentage) + '%'
 
