@@ -108,7 +108,7 @@ if check_password():
                 def dashboard_section_selector():
                     dashb_part = st.multiselect(
                         "Pick which Dashboards to See",
-                        ["Main KPI's", 'Open SEMS', 'Carrier', 'Customer','Region', "Category", "Additional Analysis", "Action Day Follow Up"],
+                        ["All","Main KPI's", 'Open SEMS', 'Carrier', 'Customer','Region', "Category", "Additional Analysis", "Action Day Follow Up"],
                         ["Main KPI's"])
                     return dashb_part
                 dashboard_selection = dashboard_section_selector()
@@ -220,7 +220,7 @@ if check_password():
 
 
 
-            if "Main KPI's" in dashboard_selection:
+            if "Main KPI's" or "All" in dashboard_selection:
 
                 st.markdown("## Main KPIs")
 
@@ -449,7 +449,7 @@ if check_password():
 
 
 
-            if "Open SEMS" in dashboard_selection:
+            if "Open SEMS" or "All" in dashboard_selection:
 
                 st.markdown("## Open SEM Status")
 
@@ -603,7 +603,7 @@ if check_password():
 
 
                 st.markdown("----", unsafe_allow_html=True)
-            if "Priority" in dashboard_selection:
+            if "Priority" or "All"  in dashboard_selection:
                 st.markdown("## Priority")
 
                 priority_column1, priority_column2 = st.columns(2)
@@ -718,7 +718,7 @@ if check_password():
                                 unsafe_allow_html=True)
                 st.markdown("<hr/>", unsafe_allow_html=True)
 
-            if "Category" in dashboard_selection:
+            if "Category" or "All" in dashboard_selection:
                 st.markdown("## Category Analysis (RO/TEL/AOU)")
 
 
@@ -833,7 +833,7 @@ if check_password():
 
                 # top 10 partners
 
-            if "Partner" in dashboard_selection:
+            if "Partner" or "All" in dashboard_selection:
                 st.markdown("## Top Partner Analysis")
                 x = graph_data.groupby('Sold-To ID').size()
                 df_partner = pd.DataFrame(x, columns=['Count'])
@@ -917,7 +917,7 @@ if check_password():
                 st.markdown("<hr/>", unsafe_allow_html=True)
 
                 ## REGION
-            if "Region" in dashboard_selection:
+            if "Region" or "All" in dashboard_selection:
                 st.markdown("## Region Analysis")
                 x = graph_data.groupby('Sales Region').size()
                 df_region = pd.DataFrame(x, columns=['Count'])
@@ -1003,7 +1003,7 @@ if check_password():
 
                 st.markdown("<hr/>", unsafe_allow_html=True)
                 # Additional Analysis
-            if "Additional Analysis" in dashboard_selection:
+            if "Additional Analysis" or "All" in dashboard_selection:
                 st.markdown("## Additional Analysis")
                 if len(graph_data["FW"].unique())>2:
                         x = graph_data.groupby('FW').size()
@@ -1042,7 +1042,7 @@ if check_password():
 
                 # ----------------------------- Carrier Analysis -------------------------
                 st.markdown("<hr/>", unsafe_allow_html=True)
-            if "Carrier" in dashboard_selection:
+            if "Carrier" or "All"  in dashboard_selection:
                 st.markdown("## Carrier Analysis")
 
 
@@ -1143,7 +1143,7 @@ if check_password():
 
             # ----------------------- CUSTOMERS -------------------
 
-            if "Customer" in dashboard_selection:
+            if "Customer" or "All" in dashboard_selection:
                 st.markdown("<hr/>", unsafe_allow_html=True)
                 st.markdown("## Customer Analysis")
 
@@ -1283,7 +1283,7 @@ if check_password():
                 customer(3, "#EFE9AE")
                 customer(4, "#CDEAC0")
 
-            if "Action Day Follow Up" in dashboard_selection:
+            if "Action Day Follow Up" or "All" in dashboard_selection:
 
                 sems_df['Dates'] = pd.to_datetime(sems_df['Modified Date Time']).dt.date
                 date_to_compare = [d.date() for d in sems_df['Modified Date Time']]
