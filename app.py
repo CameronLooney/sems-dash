@@ -1180,7 +1180,20 @@ if check_password():
                     df_total = df_total.sort_values('Count', ascending=[False])
                     df_total = df_total.head(n=15)
                     return df_total
+                def customer_action_day_hist_top10():
+                    x = graph_data.groupby('Sold-To ID')["Action Age [Days]"].mean()
+                    df_open = pd.DataFrame(x, columns=["Action Age [Days]"])
+                    df_open["Action Age [Days]"] = df_open["Action Age [Days]"].round(2)
+                    df_open['Sold-To ID'] = df_open.index
+                    df_open = df_open.sort_values("Action Age [Days]", ascending=[False])
+                    df_open = df_open.head(10)
+                    fig = px.histogram(data_frame=df_open, x='Sold-To ID', y="Action Age [Days]",
+                                       title="Longest waiting Customers", color_discrete_sequence=['gold'],
+                                       text_auto=True)
+                    st.plotly_chart(fig, use_container_width=True)
 
+
+                customer_action_day_hist_top10()
                 def customer_action_day_hist():
                     x = graph_data.groupby('Sold-To ID')["Action Age [Days]"].mean()
                     df_open = pd.DataFrame(x, columns=["Action Age [Days]"])
@@ -1230,6 +1243,7 @@ if check_password():
                             xaxis=dict(
                                 tickfont=dict(size=7.5)))
                         st.plotly_chart(fig, use_container_width=True)
+
 
                     def customer_affected_graph():
                         x = customer_df.groupby('Carrier').size()
