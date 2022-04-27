@@ -528,7 +528,7 @@ if check_password():
                 if len(graph_data["FW"].unique())>=3:
 
                     def open_order_trend():
-                        x = graph_data.groupby(["FW"]).size().reset_index(name="Count")
+                        x = graph_data.groupby(["FW"]).size().reset_index(name  ="Count")
                         fig = px.scatter(data_frame=x, x="FW", y="Count", title='Open SEM Trend',
                                          color_discrete_sequence=['gold'])
                         fig.update_layout(xaxis=dict(showgrid=False),
@@ -930,7 +930,7 @@ if check_password():
 
                 st.plotly_chart(fig, use_container_width=True)
 
-
+                open = open_status_df(graph_data)
                 x = open.groupby(['Sales Region', 'Priority']).size()
                 new_df = x.to_frame(name='Count').reset_index()
                 new_df = new_df.sort_values('Count', ascending=[False])
@@ -1116,8 +1116,24 @@ if check_password():
                                            color_discrete_sequence=[colour],
                                            text_auto=True)
                         st.plotly_chart(fig, use_container_width=True)
+
+                    def carrier_sem_trend():
+                        x = carrier_df.groupby('Created On').size()
+                        carrier_cust_affected_df = pd.DataFrame(x, columns=['Count'])
+                        carrier_cust_affected_df["Date"] = carrier_cust_affected_df.index
+                        carrier_cust_affected_df= carrier_cust_affected_df.sort_values('Date', ascending=[False])
+                        carrier_cust_affected_df['Date'] = pd.to_datetime(carrier_cust_affected_df['Date'])
+                        fig = px.scatter(data_frame=carrier_cust_affected_df, x="Date", y="Count", trendline="ols",
+                                         title=str(carrier + ' SEM Trend'),
+                                         color_discrete_sequence=[colour], trendline_color_override="gold")
+                        fig.update_layout(xaxis=dict(showgrid=False),
+                                          yaxis=dict(showgrid=False)
+                                          )
+                        fig.update_traces(mode='lines')
+                        st.plotly_chart(fig, use_container_width=True)
                     issue_graph()
                     customer_affected_graph()
+                    carrier_sem_trend()
                     st.markdown("<hr/>", unsafe_allow_html=True)
                 carrier(0,"#FFAC81")
                 carrier(1,"#FF928B")
@@ -1165,23 +1181,54 @@ if check_password():
                     df_total = df_total.head(n=15)
                     return df_total
 
+                def customer_action_day_hist():
+                    x = graph_data.groupby('Sold-To ID')["Action Age [Days]"].mean()
+                    df_open = pd.DataFrame(x, columns=["Action Age [Days]"])
+                    df_open["Action Age [Days]"] = df_open["Action Age [Days]"].round(2)
+                    df_open['Sold-To ID'] = df_open.index
+                    df_open = df_open.sort_values("Action Age [Days]", ascending=[False])
+                    df_open = df_open[df_open["Action Age [Days]"]>10]
+                    fig = px.histogram(data_frame=df_open, x='Sold-To ID', y="Action Age [Days]",
+                                       title="Customers whose Avg Action Days >10", color_discrete_sequence=['gold'],
+                                       text_auto=True)
+                    st.plotly_chart(fig, use_container_width=True)
+                customer_action_day_hist()
+
                 # TOP CARRIER
                 def customer(number, colour):
                     df_total = df_customer_total()
                     st.markdown("### " + str(number + 1) + ". " + str(df_total['Sold-To ID'].iloc[number]))
                     customer = str(df_total['Sold-To ID'].iloc[number])
                     customer_df = graph_data[graph_data["Sold-To ID"].str.contains(customer, na=False)]
-
                     def issue_graph():
+                        x = customer_df.groupby('SEM Issue Type').size()
+                        customer_issue_df = pd.DataFrame(x, columns=['Count'])
+                        customer_issue_df["SEM Issue Type"] = customer_issue_df.index
+                        customer_issue_df= customer_issue_df.sort_values('Count', ascending=[False])
+                        customer_issue_df = customer_issue_df.head(n=3)
+                        fig = px.histogram(data_frame=customer_issue_df, x='SEM Issue Type', y="Count",
+                                           title="SEM Issues for " + customer,
+                                           color_discrete_sequence=[colour],
+                                           text_auto=True)
+                        fig.update_layout(
+                            xaxis=dict(
+                                tickfont=dict(size=7.5)))
+                        st.plotly_chart(fig, use_container_width=True)
+
+
+                    def sub_issue_graph():
                         x = customer_df.groupby('SEM Sub issue Type').size()
                         customer_issue_df = pd.DataFrame(x, columns=['Count'])
                         customer_issue_df["SEM Sub issue Type"] = customer_issue_df.index
                         customer_issue_df= customer_issue_df.sort_values('Count', ascending=[False])
-                        customer_issue_df = customer_issue_df.head(n=10)
+                        customer_issue_df = customer_issue_df.head(n=8)
                         fig = px.histogram(data_frame=customer_issue_df, x='SEM Sub issue Type', y="Count",
                                            title="SEM Sub-Issues for " + customer,
                                            color_discrete_sequence=[colour],
                                            text_auto=True)
+                        fig.update_layout(
+                            xaxis=dict(
+                                tickfont=dict(size=7.5)))
                         st.plotly_chart(fig, use_container_width=True)
 
                     def customer_affected_graph():
@@ -1189,17 +1236,43 @@ if check_password():
                         customer_carrier_affected_df = pd.DataFrame(x, columns=['Count'])
                         customer_carrier_affected_df["Carrier"] = customer_carrier_affected_df.index
                         customer_carrier_affected_df = customer_carrier_affected_df.sort_values('Count', ascending=[False])
-                        customer_carrier_affected_df = customer_carrier_affected_df.head(n=10)
+                        customer_carrier_affected_df = customer_carrier_affected_df.head(n=5)
                         fig = px.histogram(data_frame=customer_carrier_affected_df, x='Carrier', y="Count",
                                            title="Carriers affecting " + customer,
                                            color_discrete_sequence=[colour],
                                            text_auto=True)
                         st.plotly_chart(fig, use_container_width=True)
 
+                    def customer_trend_graph():
+                        x = customer_df.groupby('Created On').size()
+                        customer_carrier_affected_df = pd.DataFrame(x, columns=['Count'])
+                        customer_carrier_affected_df["Date"] = customer_carrier_affected_df.index
+                        customer_carrier_affected_df = customer_carrier_affected_df.sort_values('Date',
+                                                                                                ascending=[False])
+
+                        customer_carrier_affected_df = customer_carrier_affected_df.sort_values(by='Date', ascending=True)
+                        customer_carrier_affected_df['Date'] = pd.to_datetime( customer_carrier_affected_df['Date'])
+                        fig = px.scatter(data_frame=customer_carrier_affected_df, x="Date", y="Count", trendline = "ols",title= str(customer + ' SEM Trend'),
+                                         color_discrete_sequence=[colour], trendline_color_override="gold")
+                        fig.update_layout(xaxis=dict(showgrid=False),
+                                          yaxis=dict(showgrid=False)
+                                          )
+                        fig.update_traces(mode='lines')
+                        st.plotly_chart(fig, use_container_width=True)
+
+                    col_1,col_2 = st.columns(2)
+                    row_2_col_1, row_2_col_2 = st.columns([3,6])
+                    with col_1:
+                        sub_issue_graph()
+
+                    with col_2:
+                        customer_affected_graph()
 
 
-                    issue_graph()
-                    customer_affected_graph()
+                    with row_2_col_1:
+                        issue_graph()
+                    with row_2_col_2:
+                        customer_trend_graph()
                     st.markdown("<hr/>", unsafe_allow_html=True)
 
 
