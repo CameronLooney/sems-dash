@@ -6,3 +6,4 @@ natsort
 openpyxl
 datetime
 statsmodels
+xlsxwriter
