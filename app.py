@@ -1209,8 +1209,11 @@ if check_password():
                     if chosen_unique_carrier is not None:
                         st.markdown("## Additional Chosen Carriers")
                         not_visualised = [x for x in chosen_unique_carrier if x not in prev_viz]
-                        for i in not_visualised:
-                            carrier(i, "gold")
+                        for i in chosen_unique_carrier:
+                            if i not in prev_viz:
+                                carrier(i, "gold")
+                            else:
+                                st.info(i + " was visualised above")
 
 
 
@@ -1399,8 +1402,11 @@ if check_password():
                     if chosen_unique_customers is not None:
                         st.markdown("## Additional Chosen Customers")
                         not_visualised = [x for x in chosen_unique_customers if x not in prev_viz_cust]
-                        for i in not_visualised:
-                            customer(i, "gold")
+                        for i in chosen_unique_customers:
+                            if i not in prev_viz_cust:
+                                customer(i, "gold")
+                            else:
+                                st.info(i + " was visualised above")
 
             if "Action Day Follow Up" in dashboard_selection:
 
