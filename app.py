@@ -1,25 +1,21 @@
+# import packages
 import streamlit as st
 import pandas as pd
 import numpy as np
-import itertools
-
-
 import plotly.express as px
-
 from natsort import natsort_keygen
 from datetime import date,timedelta
 import os
 import io
-import time
 
+# page title
 st.set_page_config(page_title = 'SEMs Dashboard',layout='wide',page_icon=':bar_chart')
 
-### top row
+
 st.sidebar.markdown("## Dashboard Parameters")
-path = os.path.join(os.path.expanduser("~"), "Library/CloudStorage/Box-Box/SEMS data for Dashboard/")
 
-
-
+# Password authentication to access app
+# Password is changed in secrets.toml file
 def check_password():
     """Returns `True` if the user had the correct password."""
 
@@ -48,26 +44,32 @@ def check_password():
         # Password correct.
         return True
 
+# if Password is correct load sidebar
 if check_password():
 
+    # Upload Raw excel file
     sems = st.sidebar.file_uploader("Upload SEMS data", type="xlsx")
+    # if a file has been uploaded run
     if sems is not None:
 
-
+        # read in excel file to pandas df
+        # @st.experimental_memo used to cache computationally heavy functions
         @st.experimental_memo
         def read_excel(df):
             sems_df = pd.read_excel(df, sheet_name=0, engine="openpyxl")
             return sems_df
         sems_df = read_excel(sems)
 
-
+        # Filter df to specifications required for dashboard
+        # Drop all AOU,RMA,C2C sems
+        # Only region needed for dashboard is Western Europe
         @st.experimental_memo
         def data_filter(df):
             # 1. Drop unneeded columns
             # 2. Drop non Western Europe
             # 3. Drop RMA -> Failed Pickup etc
             # 4. Drop AOU
-            # is Telco needed??
+            # 5. Drop C2C
             cols_to_drop = ['RMA  Nr', 'Assigned To User Name', 'Resolution', 'Wk 12/13', 'Sales District']
             df.drop(cols_to_drop, inplace=True, axis=1)
             regions_to_keep = ['South Europe', "DACH", 'UK&I', 'North Europe']
@@ -77,7 +79,6 @@ if check_password():
             df = df[~df["Created by Team Name"].str.contains("C2C")]
             df = df[~df["Carrier"].str.contains("RMA",na=False)]
             df = df[~df["CAT"].str.contains("AOU")]
-            #filtering out C2C
             df = df[~df["Assigned To Team"].str.contains("C2C",na=False)]
 
             return df
@@ -85,11 +86,16 @@ if check_password():
 
         sems_df = data_filter(sems_df)
 
-
+        # Get customers who have had >75 SEMS. This is arbitrary and chosen for performance and usability
+        # To include all customers remove lambda or reduce threshold
+        # This function is used to populate customer multiselect widget in the additional parameter section
         def get_top_customers(df):
             return (list(df["Sold-To ID"].value_counts().loc[lambda x: x>75].index))
 
 
+        # Get carriers who have had >40 SEMS. This is arbitrary and chosen for performance and usability
+        # To include all carriers remove lambda or reduce threshold
+        # This function is used to populate carrier multiselect widget in the additional parameter section
         unique_customer_list = get_top_customers(sems_df)
         def get_top_carriers(df):
             return (list(df["Carrier"].value_counts().loc[lambda x: x>40].index))
@@ -97,31 +103,30 @@ if check_password():
 
         unique_carrier_list = get_top_carriers(sems_df)
 
+        # Sidebar Form (using form prevents rerun when widget is changed)
         with st.sidebar.form(key='my_form_to_submit'):
 
             with st.sidebar:
+                # Used for the start date calender widget
                 def start_data_date():
                     start_date = st.date_input('Start Date', value=(date.today() - timedelta(30)))
                     start_date = str(start_date)
                     return start_date
                 start_date = start_data_date()
+
+
+                # Used for the end date calender widget
                 def end_data_date():
                     end = st.date_input('End Date', value=date.today())
                     end_date = str(end)
                     return end_date
                 end_date = end_data_date()
 
-
-
-
-
-
-
-
-
+                # Filter out all rows that fall outside the range chosen by the user
                 sems_df["Created On"] = sems_df["Created On"].astype(str)
                 sems_df = sems_df[(sems_df["Created On"] >= start_date) & (sems_df["Created On"] <=end_date)]
 
+                # Multiselect button to allow the user to populate a dashboard on an area of focus
                 def dashboard_section_selector():
                     dashb_part = st.multiselect(
                         "Pick which Dashboards to See",
@@ -130,17 +135,23 @@ if check_password():
                     return dashb_part
                 dashboard_selection = dashboard_section_selector()
 
+                # Slider which will be used in Excel File creation to filter out all rows whose value is less than slider
                 def action_day_selector():
                     days = st.slider("Select minimum number of Action Days for Excel File Generator", min_value = 0, max_value = 30, value = 10)
                     return days
                 action_days = action_day_selector()
                 st.header("Additional Parameters")
+
+                # This section is for if the user needs a specific carrier/ customer that is not in the top results.
+                # If Yes is chosen the following parameters will be used, if no they will be ignored
+
                 def option_to_include_additional():
                     option = st.radio(
                         "Include additional parameters?",
                         ("No","Yes"))
                     return option
                 additional_choice = option_to_include_additional()
+                # Multiselect button to allow the user to specifically choose which customers to deep dive
                 def customers_unique():
                     customers = st.multiselect(
                         "Pick which customer you want to visualise",
@@ -149,6 +160,8 @@ if check_password():
                     return customers
                 chosen_unique_customers = customers_unique()
 
+
+                # Multiselect button to allow the user to specifically choose which carrier to deep dive
                 def carrier_unique():
                     carrier = st.multiselect(
                         "Pick which carrier you want to visualise",
@@ -160,7 +173,7 @@ if check_password():
 
 
 
-
+                # Helper Function to a sorted unique list of which customers are present in the uploaded excel file
                 @st.experimental_memo
                 def sort_quarters(df):
                     year_quarter_list = df["FW"].unique()
@@ -174,7 +187,7 @@ if check_password():
                     return fq_params
                 fq_params = sort_quarters(sems_df)
 
-
+                # unique list of weeks present
                 def number_of_weeks(df):
                     return len(list(df['FW'].unique()))
                 number_of_weeks_in_data = number_of_weeks(sems_df)
@@ -182,20 +195,20 @@ if check_password():
 
 
 
-
+        # If the submit button is pressed we batch import the parameters and run the script
         if submit_button:
-            # zip two lists and drop all rows not in and boom we are done
 
+            # drop rows that fall outside the specified date range
             @st.experimental_memo
             def drop_unneeded_date_row(df,start,end):
                 sems_df = df[(df["Created On"] >= start) & (df["Created On"] <= end)]
                 return sems_df
-
+            # graph_data will be main dataframe we call for graphing
             graph_data = drop_unneeded_date_row(sems_df,start_date,end_date)
             if len(graph_data["FW"].unique())==0:
                 st.error("ERROR: No SEMS Data to Analyse")
 
-
+            # add a quarters column to our dataframe (Not sure if its actually used so might delete)
             @st.experimental_memo
             def add_quarters_column(df):
                 df['Quarter'] = (np.where(df['FW'].str.contains('W'),
@@ -205,7 +218,8 @@ if check_password():
             graph_data = add_quarters_column(graph_data)
 
 
-            #quarter_list= sems_df['FW'].str.split('W', 1, expand=True).unqiue()
+            # Function to create a dataframe with open status only
+            # Used for graphing
             @st.experimental_memo
             def open_status_df(df):
                 status = ["Open"]
@@ -213,6 +227,8 @@ if check_password():
                 return df
 
 
+            # Function to create a dataframe with closed status only
+            # Used for graphing
             @st.experimental_memo
             def closed_status_df(df):
                 status = ["Closed"]
@@ -222,23 +238,24 @@ if check_password():
 
             st.markdown("<hr/>", unsafe_allow_html=True)
 
-
+            # Helper Function that returns percentage of the two parameters passed. Used for KPIs
             def percentage(part, whole):
                 if round(float(whole), 0) == 0:
                     return str(round(100 * float(part), 2))
                 Percentage = round(100 * float(part) / float(whole), 2)
                 return str(Percentage) + '%'
 
-
+            # Get a count of the number of rows in the df
             def row_count(df):
                 num_rows = len(df.index)
                 return num_rows
 
-
+            # get just open and closed status (delete)
             def open_closed_status_df(df):
                 status = ["Open", "Closed"]
                 df = df[df["SEM Status"].isin(status)]
                 return df
+            # produce a value count dataframe
             def value_counts_df(df, col):
 
                 df = df.groupby(col).size()
@@ -247,20 +264,23 @@ if check_password():
                 df[col] = df.index
                 return df
 
-
+            # helper function
             def df_with_two(df, col):
                 values = sorted(list(df[col].unique()), reverse=True)
                 values = values[:2]
                 df_compare = df[df[col].isin(values)]
                 return df_compare
 
-
+            # helper functions for week on week metrics
+            # current_df generates a dataframe with the current weeks metrics
             def current_df(df, col):
                 values = sorted(list(df[col].unique()), reverse=True)
                 df_compare = df[df[col] == values[0]]
                 return df_compare
 
 
+            # helper functions for week on week metrics
+            # previous_df generates a dataframe with the previous weeks metrics
             def previous_df(df, col):
                 values = sorted(list(df[col].unique()), reverse=True)
                 df_compare = df[df[col] == values[1]]
@@ -268,7 +288,7 @@ if check_password():
 
 
 
-
+            # If Main KPI is included in multiselect button run this block of code
             if "Main KPI's" in dashboard_selection:
 
                 st.markdown("## Main KPIs")
@@ -277,7 +297,7 @@ if check_password():
 
 
 
-
+                # FIRST ROW OF KPIS
                 with first_kpi:
                     st.markdown("**Number of SEMS**")
                     num_sems = len(graph_data.index)
@@ -298,8 +318,8 @@ if check_password():
 
 
 
-                ### second row
 
+                # SECOND ROW OF KPIS
                 st.markdown("<hr/>", unsafe_allow_html=True)
 
                 st.markdown("## Secondary KPIs")
@@ -349,10 +369,13 @@ if check_password():
                     num_p1 = graph_data['Priority'].str.contains(r"P1").sum()
                     st.markdown(f"<h1 style='text-align: left; color: gold;font-size: 30px;'>{num_p1}</h1>", unsafe_allow_html=True)
                 st.markdown("<hr/>", unsafe_allow_html=True)
+
+                # if there are multiple weeks this code will execute (cant compare week on week with 1 week)
                 if len(graph_data["FW"].unique())>=2:
                     st.markdown("## Week on Week Markers")
 
 
+                    # GENERATE WEEK ON WEEK KPIS
                     weeks_to_compare = df_with_two(graph_data,"FW")
                     df_weeks = value_counts_df(weeks_to_compare,'FW')
 
@@ -435,7 +458,7 @@ if check_password():
                     st.markdown("<hr/>", unsafe_allow_html=True)
 
 
-
+                # If there are 2 or more quarters we can do quarter on quarter metrics
                 if len(fq_params) >= 2:
                     st.markdown("## Quarter on Quarter Markers")
                     first_quarterly_marker, second_quarterly_marker, third_quarterly_marker = st.columns(3)
@@ -491,12 +514,11 @@ if check_password():
 
 
 
-           # --------------------------------- WEEK ON WEEK MARKERS -----------------------------------
 
 
 
 
-
+            # GENERATE DASHBOARD BASED ON OPEN SEMS
 
             if "Open SEMS" in dashboard_selection:
 
@@ -608,6 +630,7 @@ if check_password():
                     fig.update_layout(xaxis=dict(showgrid=False),
                                       yaxis=dict(showgrid=True)
                                       )
+                # SUMMARY KPIS FOR OPEN SEMs
                 st.markdown("### Open SEM Summary")
                 first_open, second_open, third_open, fourth_open = st.columns(4)
                 with first_open:
