@@ -5,3 +5,4 @@ plotly
 natsort
 openpyxl
 datetime
+statsmodels
