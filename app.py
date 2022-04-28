@@ -74,8 +74,11 @@ if check_password():
             df = df[df["Sales Region"].isin(regions_to_keep)]
             df = df[~df["Created by Team Name"].str.contains("RMA")]
             df = df[~df["Created by Team Name"].str.contains("CSS CRU")]
+            df = df[~df["Created by Team Name"].str.contains("C2C")]
             df = df[~df["Carrier"].str.contains("RMA",na=False)]
             df = df[~df["CAT"].str.contains("AOU")]
+            #filtering out C2C
+            df = df[~df["Assigned To Team"].str.contains("C2C",na=False)]
 
             return df
 
