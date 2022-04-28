@@ -83,6 +83,17 @@ if check_password():
         sems_df = data_filter(sems_df)
 
 
+        def get_top_customers(df):
+            return (list(df["Sold-To ID"].value_counts().loc[lambda x: x>75].index))
+
+
+        unique_customer_list = get_top_customers(sems_df)
+        def get_top_carriers(df):
+            return (list(df["Carrier"].value_counts().loc[lambda x: x>40].index))
+
+
+        unique_carrier_list = get_top_carriers(sems_df)
+
         with st.sidebar.form(key='my_form_to_submit'):
 
             with st.sidebar:
@@ -102,6 +113,9 @@ if check_password():
 
 
 
+
+
+
                 sems_df["Created On"] = sems_df["Created On"].astype(str)
                 sems_df = sems_df[(sems_df["Created On"] >= start_date) & (sems_df["Created On"] <=end_date)]
 
@@ -112,10 +126,38 @@ if check_password():
                         ["Main KPI's"])
                     return dashb_part
                 dashboard_selection = dashboard_section_selector()
+
                 def action_day_selector():
                     days = st.slider("Select minimum number of Action Days for Excel File Generator", min_value = 0, max_value = 30, value = 10)
                     return days
                 action_days = action_day_selector()
+                st.header("Additional Parameters")
+                def option_to_include_additional():
+                    option = st.radio(
+                        "Include additional parameters?",
+                        ("No","Yes"))
+                    return option
+                additional_choice = option_to_include_additional()
+                def customers_unique():
+                    customers = st.multiselect(
+                        "Pick which customer you want to visualise",
+                        unique_customer_list,
+                        [])
+                    return customers
+                chosen_unique_customers = customers_unique()
+
+                def carrier_unique():
+                    carrier = st.multiselect(
+                        "Pick which carrier you want to visualise",
+                        unique_carrier_list,
+                        [])
+                    return carrier
+                chosen_unique_carrier = carrier_unique()
+
+
+
+
+
                 @st.experimental_memo
                 def sort_quarters(df):
                     year_quarter_list = df["FW"].unique()
@@ -128,6 +170,8 @@ if check_password():
                     fq_params = sorted(quarter_list,reverse=True)
                     return fq_params
                 fq_params = sort_quarters(sems_df)
+
+
                 def number_of_weeks(df):
                     return len(list(df['FW'].unique()))
                 number_of_weeks_in_data = number_of_weeks(sems_df)
@@ -135,7 +179,8 @@ if check_password():
 
 
 
-        if st.sidebar.button("Generate Dashboard"):
+
+        if submit_button:
             # zip two lists and drop all rows not in and boom we are done
 
             @st.experimental_memo
@@ -217,6 +262,7 @@ if check_password():
                 values = sorted(list(df[col].unique()), reverse=True)
                 df_compare = df[df[col] == values[1]]
                 return df_compare
+
 
 
 
@@ -1051,10 +1097,21 @@ if check_password():
                 df_total = pd.DataFrame(x, columns=['Count'])
                 df_total["Carrier"] = df_total.index
                 df_total = df_total.sort_values('Count', ascending=[False])
-                df_total = df_total.head(n=10)
-                fig = px.histogram(data_frame=df_total, x='Carrier', y="Count", title = "Top 10 Carriers by SEMS created",color_discrete_sequence=['gold'],
+                df_total_head = df_total.head(n=10)
+                fig = px.histogram(data_frame=df_total_head, x='Carrier', y="Count", title = "Top 10 Carriers by SEMS created",color_discrete_sequence=['gold'],
                                    text_auto=True)
                 st.plotly_chart(fig, use_container_width=True)
+
+
+                def previously_visualised_carriers():
+                    lst = []
+                    for i in range(5):
+                        carrier = str(df_total['Carrier'].iloc[i])
+                        lst.append(carrier)
+                    return lst
+
+
+                prev_viz = previously_visualised_carriers()
 
                 # Carrier by Open SEMS
                 df_open = open_status_df(graph_data)
@@ -1062,8 +1119,8 @@ if check_password():
                 df_open = pd.DataFrame(x, columns=['Count'])
                 df_open['Carrier'] = df_open.index
                 df_open = df_open.sort_values('Count', ascending=[False])
-                df_open = df_open.head(n=10)
-                fig = px.histogram(data_frame=df_open, x='Carrier', y="Count",
+                df_open_head = df_open.head(n=10)
+                fig = px.histogram(data_frame=df_open_head, x='Carrier', y="Count",
                                    title="Top 10 Carriers by Open SEMS", color_discrete_sequence=['gold'],
                                    text_auto=True)
                 st.plotly_chart(fig, use_container_width=True)
@@ -1090,10 +1147,17 @@ if check_password():
 
 
                 # TOP CARRIER
-                def carrier(number,colour):
-                    st.markdown("### " +str(number+1) + ". " + str(df_total['Carrier'].iloc[number]))
-                    carrier = str(df_total['Carrier'].iloc[number])
-                    carrier_df = graph_data[graph_data["Carrier"].str.contains(carrier, na=False)]
+                def carrier(number_or_name,colour):
+                    if isinstance(number_or_name,int):
+
+                        st.markdown("### " +str(number_or_name+1) + ". " + str(df_total['Carrier'].iloc[number_or_name]))
+                        carrier = str(df_total['Carrier'].iloc[number_or_name])
+                        carrier_df = graph_data[graph_data["Carrier"].str.contains(carrier, na=False)]
+                    if isinstance(number_or_name,str):
+                        st.markdown("### " + number_or_name)
+                        carrier = number_or_name
+                        carrier_df = graph_data[graph_data["Carrier"].str.contains(carrier, na=False)]
+
 
                     def issue_graph():
                         x = carrier_df.groupby('SEM Sub issue Type').size()
@@ -1141,6 +1205,20 @@ if check_password():
                 carrier(3,"#EFE9AE")
                 carrier(4,"#CDEAC0")
 
+                if additional_choice:
+                    if chosen_unique_carrier is not None:
+                        st.markdown("## Additional Chosen Carriers")
+                        not_visualised = [x for x in chosen_unique_carrier if x not in prev_viz]
+                        for i in not_visualised:
+                            carrier(i, "gold")
+
+
+
+
+
+
+
+
             # ----------------------- CUSTOMERS -------------------
 
             if "Customer" in dashboard_selection:
@@ -1178,7 +1256,7 @@ if check_password():
                     df_total = pd.DataFrame(x, columns=['Count'])
                     df_total['Sold-To ID'] = df_total.index
                     df_total = df_total.sort_values('Count', ascending=[False])
-                    df_total = df_total.head(n=15)
+
                     return df_total
                 def customer_action_day_hist_top10():
                     x = graph_data.groupby('Sold-To ID')["Action Age [Days]"].mean()
@@ -1188,7 +1266,7 @@ if check_password():
                     df_open = df_open.sort_values("Action Age [Days]", ascending=[False])
                     df_open = df_open.head(10)
                     fig = px.histogram(data_frame=df_open, x='Sold-To ID', y="Action Age [Days]",
-                                       title="Longest waiting Customers", color_discrete_sequence=['gold'],
+                                       title="Longest waiting Customers (by Average Action Day)", color_discrete_sequence=['gold'],
                                        text_auto=True)
                     st.plotly_chart(fig, use_container_width=True)
 
@@ -1207,12 +1285,33 @@ if check_password():
                     st.plotly_chart(fig, use_container_width=True)
                 customer_action_day_hist()
 
-                # TOP CARRIER
-                def customer(number, colour):
+                def previously_visualised_customers():
                     df_total = df_customer_total()
-                    st.markdown("### " + str(number + 1) + ". " + str(df_total['Sold-To ID'].iloc[number]))
-                    customer = str(df_total['Sold-To ID'].iloc[number])
-                    customer_df = graph_data[graph_data["Sold-To ID"].str.contains(customer, na=False)]
+                    lst = []
+                    for i in range(5):
+                        customer = str(df_total['Sold-To ID'].iloc[i])
+                        lst.append(customer)
+                    return lst
+
+
+                prev_viz_cust = previously_visualised_customers()
+
+                # TOP CARRIER
+                def customer(number_or_name, colour):
+                    df_total = df_customer_total()
+
+                    if isinstance(number_or_name,int):
+                        st.markdown("### " + str(number_or_name + 1) + ". " + str(df_total['Sold-To ID'].iloc[number_or_name]))
+                        customer = str(df_total['Sold-To ID'].iloc[number_or_name])
+                        customer_df = graph_data[graph_data["Sold-To ID"].str.contains(customer, na=False)]
+
+
+                    if isinstance(number_or_name,str):
+                        st.markdown("### " + number_or_name)
+                        customer = number_or_name
+                        customer_df = graph_data[graph_data["Sold-To ID"].str.contains(customer, na=False)]
+
+
                     def issue_graph():
                         x = customer_df.groupby('SEM Issue Type').size()
                         customer_issue_df = pd.DataFrame(x, columns=['Count'])
@@ -1296,6 +1395,12 @@ if check_password():
                 customer(2, "#FEC3A6")
                 customer(3, "#EFE9AE")
                 customer(4, "#CDEAC0")
+                if additional_choice:
+                    if chosen_unique_customers is not None:
+                        st.markdown("## Additional Chosen Customers")
+                        not_visualised = [x for x in chosen_unique_customers if x not in prev_viz_cust]
+                        for i in not_visualised:
+                            customer(i, "gold")
 
             if "Action Day Follow Up" in dashboard_selection:
 
@@ -1343,7 +1448,7 @@ if check_password():
                         st.download_button(
                             label="Download Excel worksheets",
                             data=buffer,
-                            file_name="LTSI_file_" + d1 + ".xlsx",
+                            file_name="SEM-Follow-Up-" + d1 + ".xlsx",
                             mime="application/vnd.ms-excel"
                         )
                 write_to_excel(sems_df)
