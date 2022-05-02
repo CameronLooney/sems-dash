@@ -104,6 +104,7 @@ if check_password():
         unique_carrier_list = get_top_carriers(sems_df)
 
         # Sidebar Form (using form prevents rerun when widget is changed)
+        # dont need a seperate button
         with st.sidebar.form(key='my_form_to_submit'):
 
             with st.sidebar:
